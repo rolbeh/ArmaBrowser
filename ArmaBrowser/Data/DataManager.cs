@@ -1,14 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Net;
-using System.Xml;
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.Win32;
-using ArmaBrowser.Data.DefaultImpl;
-using ArmaBrowser.Logic;
+﻿using ArmaBrowser.Data.DefaultImpl;
 
 namespace ArmaBrowser.Data
 {
@@ -19,9 +9,9 @@ namespace ArmaBrowser.Data
             return new DataRepository();
         }
 
-        public static ServerRepositorySteam CreateNewServerRepository()
+        public static Arma3ServerRepositorySteam CreateNewServerRepository()
         {
-            return new ServerRepositorySteam();
+            return new Arma3ServerRepositorySteam();
         }
     }
 }

@@ -25,6 +25,7 @@ namespace ArmaBrowser.Data.DefaultImpl
         ///     https://en.wikipedia.org/wiki/Boyer%E2%80%93Moore_string_search_algorithm
         /// </summary>
         /// <param name="source">The array to be scanned.</param>
+        /// <param name="offset"></param>
         /// <param name="pattern">The target array to search.</param>
         /// <returns>The start index of the pattern.</returns>
         public static long IndexOf(byte[] source, long offset, byte[] pattern)
@@ -88,8 +89,8 @@ namespace ArmaBrowser.Data.DefaultImpl
 
         private static long[] MakeByteTable(byte[] needle)
         {
-            const int ALPHABET_SIZE = 256;
-            var table = new long[ALPHABET_SIZE];
+            const int alphabetSize = 256;
+            var table = new long[alphabetSize];
             for (long i = 0; i < table.LongLength; ++i)
             {
                 table[i] = needle.LongLength;

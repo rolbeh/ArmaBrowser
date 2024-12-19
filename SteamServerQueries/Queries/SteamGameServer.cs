@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Net;
 
 namespace Magic.Steam.Queries
 {
@@ -79,11 +78,5 @@ namespace Magic.Steam.Queries
         public string Keywords { get; set; }
 
         public bool VerifySignatures { get; set; }
-    }
-
-    public class SteamGameServerQueryEndPoint
-    {
-        public IPAddress Host { get; set; }
-        public int QueryPort { get; internal set; }
     }
 }

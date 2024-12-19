@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ArmaBrowser.Data.DefaultImpl.Rest
+﻿namespace ArmaBrowser.Data.DefaultImpl.Rest
 {
-    class RestAddon
+    internal class RestAddon
     {
         public string Name { get; set; }
         public string ModName { get; set; }

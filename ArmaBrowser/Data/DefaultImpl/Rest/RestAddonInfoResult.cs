@@ -1,4 +1,5 @@
-﻿namespace ArmaBrowser.Data.DefaultImpl.Rest
+﻿// ReSharper disable InconsistentNaming
+namespace ArmaBrowser.Data.DefaultImpl.Rest
 {
     public class RestAddonInfoResult
     {

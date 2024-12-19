@@ -1,102 +1,88 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
+using ArmaBrowser.Data;
 using Magic.Steam;
 
 namespace ArmaBrowser.Logic
 {
-    class ServerItem : ObjectNotify, IServerItem, ArmaBrowser.Data.IServerQueryAddress
+    internal class ServerItem : ObjectNotify, IServerItem, IServerQueryAddress
     {
-        //const string imageUrl = "http://arma3.swec.se/images/flags/png/{0}.png";
-        #region Fields
-        //private string _country = "--";
-        //private string _countryUrl = string.Format(imageUrl, "--");
+        private string _modsText;
 
-        private int _playersNum;
-        private string _mission;
-        private string _version;
-        private string _currentPlayersText;
-        private string _signatures;
-        private int _maxPlayers;
-        private string _name;
-        private string _mode;
-        private ISteamGameServerPlayer[] _currentPlayers;
-        private int _ping;
-        private DateTime? _lastPlayed;
-        private bool _isFavorite;
-
-        #endregion Field
-
-        public bool IsFavorite
+        internal ServerItem()
         {
-            get { return _isFavorite; }
-            set
-            {
-                _isFavorite = value;
-                OnPropertyChanged();
-                GroupName = ServerItemGroup.Favorite;
-            }
-        }
-
-        public DateTime? LastPlayed  
-        {
-            get { return _lastPlayed; }
-            set
-            {
-                _lastPlayed = value;
-                GroupName = ServerItemGroup.Recently;
-                OnPropertyChanged();
-            }
+            this.Signatures = string.Empty;
         }
 
         public ServerItemGroup GroupName
         {
-            get 
+            get
             {
-                if (_isFavorite) return  ServerItemGroup.Favorite;
-                if (LastPlayed.HasValue) return ServerItemGroup.Recently;
-                if (Port > 0) return ServerItemGroup.Found;
+                if (this._isFavorite) return ServerItemGroup.Favorite;
+                if (this.LastPlayed.HasValue) return ServerItemGroup.Recently;
+                if (this.Port > 0) return ServerItemGroup.Found;
                 return ServerItemGroup.NoResponse;
             }
-            private set { OnPropertyChanged(); }
+            // ReSharper disable once ValueParameterNotUsed
+            private set => this.OnPropertyChanged();
         }
 
-        internal ServerItem()
+        // ReSharper disable once UnusedMember.Global
+        public string Endpoint => string.Format("{0}:{1}", this.Host, this.Port);
+
+        public string PlayersState => string.Format("{0}/{1}", this._playersNum, this._maxPlayers);
+
+        public bool IsFavorite
         {
-            Signatures = string.Empty;
+            get => this._isFavorite;
+            set
+            {
+                this._isFavorite = value;
+                this.OnPropertyChanged();
+                this.GroupName = ServerItemGroup.Favorite;
+            }
+        }
+
+        public DateTime? LastPlayed
+        {
+            get => this._lastPlayed;
+            set
+            {
+                this._lastPlayed = value;
+                this.GroupName = ServerItemGroup.Recently;
+                this.OnPropertyChanged();
+            }
         }
 
         public string Gamename { get; internal set; }
 
         public string Mode
         {
-            get { return _mode; }
+            get => this._mode;
             set
             {
-                _mode = value;
-                OnPropertyChanged();
+                this._mode = value;
+                this.OnPropertyChanged();
             }
         }
 
         public string Name
         {
-            get { return _name; }
+            get => this._name;
             set
             {
-                _name = value;
-                OnPropertyChanged();
+                this._name = value;
+                this.OnPropertyChanged();
             }
         }
 
         public string Mission
         {
-            get { return _mission; }
+            get => this._mission;
             set
             {
-                _mission = value;
-                OnPropertyChanged();
+                this._mission = value;
+                this.OnPropertyChanged();
             }
         }
 
@@ -116,25 +102,20 @@ namespace ArmaBrowser.Logic
         //    get { return _countryUrl ?? (_countryUrl = string.Format(imageUrl, _country ?? "--")); }
         //}
 
-        public System.Net.IPAddress Host { get; internal set; }
+        public IPAddress Host { get; internal set; }
 
         public int Port { get; internal set; }
-
-        public string Endpoint
-        {
-            get { return string.Format("{0}:{1}", Host, Port); }
-        }
 
         public int QueryPort { get; internal set; }
 
         public string Version
         {
-            get { return _version; }
+            get => this._version;
             set
             {
-                if (_version == value) return;
-                _version = value;
-                OnPropertyChanged();
+                if (this._version == value) return;
+                this._version = value;
+                this.OnPropertyChanged();
             }
         }
 
@@ -142,11 +123,11 @@ namespace ArmaBrowser.Logic
 
         public string ModsText
         {
-            get { return _modsText; }
+            get => this._modsText;
             internal set
             {
-                _modsText = value ?? string.Empty;
-                Mods = _modsText.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                this._modsText = value ?? string.Empty;
+                this.Mods = this._modsText.Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries);
             }
         }
 
@@ -156,95 +137,97 @@ namespace ArmaBrowser.Logic
 
         public string Signatures
         {
-            get { return _signatures; }
-            internal set
-            {
-                _signatures = (value ?? string.Empty);
-            }
+            get => this._signatures;
+            internal set => this._signatures = value ?? string.Empty;
         }
 
         public int CurrentPlayerCount
         {
-            get { return _playersNum; }
+            get => this._playersNum;
             set
             {
-                _playersNum = value;
-                OnPropertyChanged("IsPlayerSlotsFull");
-                OnPropertyChanged("PlayersState");
-                OnPropertyChanged();
+                this._playersNum = value;
+                this.OnPropertyChanged("IsPlayerSlotsFull");
+                this.OnPropertyChanged("PlayersState");
+                this.OnPropertyChanged();
             }
         }
 
         public int MaxPlayers
         {
-            get { return _maxPlayers; }
+            get => this._maxPlayers;
             set
             {
-                _maxPlayers = value;
-                OnPropertyChanged("IsPlayerSlotsFull");
-                OnPropertyChanged("PlayersState");
-                OnPropertyChanged();
+                this._maxPlayers = value;
+                this.OnPropertyChanged("IsPlayerSlotsFull");
+                this.OnPropertyChanged("PlayersState");
+                this.OnPropertyChanged();
             }
-        }
-
-        public string PlayersState
-        {
-            get { return string.Format("{0}/{1}", _playersNum, _maxPlayers); }
         }
 
         public ISteamGameServerPlayer[] CurrentPlayers
         {
-            get { return _currentPlayers; }
+            get => this._currentPlayers;
             internal set
             {
-                if (_currentPlayers == value) return;
-                    _currentPlayers = value;
-                OnPropertyChanged();
+                if (this._currentPlayers == value) return;
+                this._currentPlayers = value;
+                this.OnPropertyChanged();
             }
         }
 
-        public bool IsPlayerSlotsFull
-        {
-            get { return _maxPlayers == _playersNum; }
-        }
+        public bool IsPlayerSlotsFull => this._maxPlayers == this._playersNum;
 
         public string CurrentPlayersText
         {
-            get { return _currentPlayersText; }
+            get => this._currentPlayersText;
             internal set
             {
-                if (_currentPlayersText == value) return;
-                _currentPlayersText = value;
-                OnPropertyChanged();
+                if (this._currentPlayersText == value) return;
+                this._currentPlayersText = value;
+                this.OnPropertyChanged();
             }
         }
 
         public string Island { get; internal set; }
-        
-        public string FullText
-        {
-            get { return string.Format("{0} {1} {2}", Name, Mission, Island); }
-        }
 
-        public string _modsText { get; set; }
+        public string FullText => string.Format("{0} {1} {2}", this.Name, this.Mission, this.Island);
 
         public bool Passworded { get; set; }
 
-        public bool IsVersionOk { get; set; }
-
         public int Ping
         {
-            get { return _ping; }
+            get => this._ping;
             internal set
             {
-                if (_ping == value) return;
-                _ping = value;
-                OnPropertyChanged();
+                if (this._ping == value) return;
+                this._ping = value;
+                this.OnPropertyChanged();
             }
         }
 
 
         public bool VerifySignatures { get; set; }
-    }
+        //const string imageUrl = "http://arma3.swec.se/images/flags/png/{0}.png";
 
+        #region Fields
+
+        //private string _country = "--";
+        //private string _countryUrl = string.Format(imageUrl, "--");
+
+        private int _playersNum;
+        private string _mission;
+        private string _version;
+        private string _currentPlayersText;
+        private string _signatures;
+        private int _maxPlayers;
+        private string _name;
+        private string _mode;
+        private ISteamGameServerPlayer[] _currentPlayers;
+        private int _ping;
+        private DateTime? _lastPlayed;
+        private bool _isFavorite;
+
+        #endregion Field
+    }
 }

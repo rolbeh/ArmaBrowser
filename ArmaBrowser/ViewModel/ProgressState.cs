@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ArmaBrowser.Logic;
 
 namespace ArmaBrowser.ViewModel
 {
-    class ProgressState : ObjectNotify, IProgressState
+    // ReSharper disable once UnusedMember.Global
+    internal class ProgressState : ObjectNotify, IProgressState
     {
         private int _maximum;
         private int _minimum;
@@ -15,7 +12,7 @@ namespace ArmaBrowser.ViewModel
 
         public int Maximum
         {
-            get { return _maximum; }
+            get => _maximum;
             set
             {
                 if (value == _maximum) return;
@@ -26,7 +23,7 @@ namespace ArmaBrowser.ViewModel
 
         public int Minimum
         {
-            get { return _minimum; }
+            get => _minimum;
             set
             {
                 if (value == _minimum) return;
@@ -37,7 +34,7 @@ namespace ArmaBrowser.ViewModel
 
         public int Value
         {
-            get { return _value; }
+            get => _value;
             set
             {
                 if (value == _value) return;

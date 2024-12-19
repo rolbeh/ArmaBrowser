@@ -1,22 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using ArmaBrowser.Data;
 using ArmaBrowser.Logic;
 using Magic.Steam;
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace ArmaBrowser.Design
 {
-    class ServerItem : IServerItem
+    internal class ServerItem : IServerItem
     {
+        public ServerItemGroup GroupName { get; set; }
         public bool IsFavorite { get; set; }
         public DateTime? LastPlayed { get; set; }
+        public string Endpoint { get; set; }
         public string Gamename { get; private set; }
         public string Mode { get; private set; }
-        public String Name { get; set; }
+        public string Name { get; set; }
         public string Mission { get; private set; }
         public IPAddress Host { get; private set; }
         public int Port { get; private set; }
@@ -36,7 +35,5 @@ namespace ArmaBrowser.Design
         public ISteamGameServerPlayer[] CurrentPlayers { get; private set; }
         public int QueryPort { get; private set; }
         public int Ping { get; private set; }
-
-        public ArmaBrowser.Logic.ServerItemGroup GroupName { get; set; }
     }
 }

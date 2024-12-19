@@ -1,51 +1,50 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Net;
 using Magic.Steam;
 
 namespace ArmaBrowser.Data.DefaultImpl
 {
-    class ServerItem : ISteamGameServer, IServerQueryAddress
+    internal class ServerItem : ISteamGameServer, IServerQueryAddress
     {
+        public IEnumerable<string> CurrentPlayers { get; set; }
+
         /// <summary>
-        /// Arma3
+        ///     Arma3
         /// </summary>
         public string Gamename { get; set; }
 
         /// <summary>
-        /// Name der Mission
+        ///     Name der Mission
         /// </summary>
         public string Mission { get; set; }
 
         /// <summary>
-        /// Länder Code z.B.'DE'
+        ///     Länder Code z.B.'DE'
         /// </summary>
         public string Country { get; set; }
 
         /// <summary>
-        /// IP - Adresse
+        ///     IP - Adresse
         /// </summary>
-        public System.Net.IPAddress Host { get; set; }
+        public IPAddress Host { get; set; }
 
         /// <summary>
-        /// GamePort
+        ///     GamePort
         /// </summary>
         public int Port { get; set; }
 
         /// <summary>
-        /// QueryPort für Serverstates
+        ///     QueryPort für Serverstates
         /// </summary>
         public int QueryPort { get; set; }
 
         /// <summary>
-        /// Version des Servers
+        ///     Version des Servers
         /// </summary>
         public string Version { get; set; }
 
         /// <summary>
-        /// Name des GameServer
+        ///     Name des GameServer
         /// </summary>
         public string Name { get; set; }
 
@@ -54,17 +53,17 @@ namespace ArmaBrowser.Data.DefaultImpl
         public string Modhashs { get; set; }
 
         /// <summary>
-        /// Anzahl der aktuellen Spieler
+        ///     Anzahl der aktuellen Spieler
         /// </summary>
-        public int CurrentPlayerCount  { get; set; }
+        public int CurrentPlayerCount { get; set; }
 
         /// <summary>
-        /// maximale Spieleranzahl
+        ///     maximale Spieleranzahl
         /// </summary>
         public int MaxPlayers { get; set; }
 
         /// <summary>
-        /// Karte
+        ///     Karte
         /// </summary>
         public string Map { get; set; }
 
@@ -73,8 +72,6 @@ namespace ArmaBrowser.Data.DefaultImpl
         public string Mode { get; set; }
 
         public bool Passworded { get; set; }
-
-        public IEnumerable<string> CurrentPlayers { get; set; }
 
         public int Ping { get; set; }
 

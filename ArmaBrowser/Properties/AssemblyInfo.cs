@@ -6,9 +6,9 @@ using System.Windows;
 [assembly: AssemblyTitle("ArmaBrowser")]
 [assembly: AssemblyDescription("Programm to start Arma 3 with server and addons")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("ArmaBrowser")]
+[assembly: AssemblyCompany("ArmaBrowser.org")]
 [assembly: AssemblyProduct("ArmaBrowser")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
@@ -20,8 +20,8 @@ using System.Windows;
     ResourceDictionaryLocation.None,
     ResourceDictionaryLocation.SourceAssembly
     )]
-[assembly: AssemblyVersion("2016.4.2.104")]
-[assembly: AssemblyFileVersion("2016.4.2.104")]
+[assembly: AssemblyVersion("18.8.26.106")]
+[assembly: AssemblyFileVersion("18.8.26.106")]
 
 //[assembly: InternalsVisibleTo("IntegrationsTest.ArmaBrowser, PublicKey=002400000480000014010000060200000024000052534131000800000100010085646f1a8d55e0" +
 //                            "0148bd1a32751795ddf3f1b9b18ee9da937bda8cdeded17c16412450552bed589b74285a0b027f" +

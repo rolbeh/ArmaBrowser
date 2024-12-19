@@ -1,4 +1,5 @@
-﻿namespace ArmaBrowser.Data
+﻿// ReSharper disable InconsistentNaming
+namespace ArmaBrowser.Data
 {
     internal class GitHubAuthor
     {

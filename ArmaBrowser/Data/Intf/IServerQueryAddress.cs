@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Net;
 
 namespace ArmaBrowser.Data
 {
-    interface IServerQueryAddress
+    internal interface IServerQueryAddress
     {
-        System.Net.IPAddress Host { get; }
+        IPAddress Host { get; }
         int QueryPort { get; }
     }
-
 }

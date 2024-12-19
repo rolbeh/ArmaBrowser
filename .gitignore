@@ -80,3 +80,5 @@ packages/
 setup.aip
 
 *.DotSettings
+
+.idea

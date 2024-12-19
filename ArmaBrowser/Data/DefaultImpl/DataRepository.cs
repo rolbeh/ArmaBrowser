@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using ArmaBrowser.Logic;
-using Magic.Steam;
 using Microsoft.Win32;
 
 namespace ArmaBrowser.Data.DefaultImpl
@@ -103,8 +102,8 @@ namespace ArmaBrowser.Data.DefaultImpl
         {
             if (string.IsNullOrWhiteSpace(baseFolder)) return new IArmaAddon[0];
 
-            var addonFolders = Directory.EnumerateDirectories(baseFolder, "@*");
-            var result = new List<IArmaAddon>(addonFolders.Count());
+            var addonFolders = Directory.EnumerateDirectories(baseFolder, "@*").ToArray();
+            var result = new List<IArmaAddon>(addonFolders.Length);
             foreach (var addonFolder in addonFolders)
             {
                 var item = new ArmaAddon

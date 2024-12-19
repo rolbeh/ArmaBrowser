@@ -1,36 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using ArmaBrowser.Logic;
 
 namespace ArmaBrowser.Design
 {
-    class DesignServerListViewModel
+    internal abstract class DesignServerListViewModel
     {
-        public DesignServerListViewModel()
+        protected DesignServerListViewModel()
         {
-            ServerItemsView = new ServerItem[]
-            { 
+            ServerItemsView = new[]
+            {
                 new ServerItem
-                {   
+                {
                     Name = "Recently",
-                    GroupName = Logic.ServerItemGroup.Recently
+                    GroupName = ServerItemGroup.Recently
                 },
-                 new ServerItem
-                {   
+                new ServerItem
+                {
                     Name = "Favorite",
-                    GroupName = Logic.ServerItemGroup.Favorite
+                    GroupName = ServerItemGroup.Favorite
                 },
-                 new ServerItem
-                {   
+                new ServerItem
+                {
                     Name = "Found",
-                    GroupName = Logic.ServerItemGroup.Found
-                },
+                    GroupName = ServerItemGroup.Found
+                }
             };
         }
 
-        public IEnumerable<ServerItem> ServerItemsView { get; private set; }
+        public IEnumerable<ServerItem> ServerItemsView { get; }
 
         public ServerItem SelectedServerItem { get; set; }
     }

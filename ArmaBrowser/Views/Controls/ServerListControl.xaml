@@ -5,7 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:sys="clr-namespace:System;assembly=mscorlib" 
              xmlns:design="clr-namespace:ArmaBrowser.Design"
-             xmlns:controls="clr-namespace:ArmaBrowser.Views.Controls"
+             xmlns:controls="clr-namespace:ArmaBrowser.Views.Controls" 
+             xmlns:armaBrowser="clr-namespace:ArmaBrowser"
              mc:Ignorable="d design"
              d:DesignHeight="300" d:DesignWidth="700" 
              d:DataContext="{d:DesignInstance Type=design:DesignServerListViewModel, IsDesignTimeCreatable=True}"
@@ -54,7 +55,7 @@
                             <Style TargetType="Image">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Path=GroupName}" Value="Recently">
+                                    <DataTrigger Binding="{Binding Path=GroupName, Mode=OneWay}" Value="Recently">
                                         <Setter Property="Visibility" Value="Visible"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -65,6 +66,7 @@
                     <TextBlock Grid.Column="1" Text="{Binding Name}"/>
                 </Grid>
         </DataTemplate>
+        <armaBrowser:PingStringValueConverter x:Key="PingStringConverter" />
 
     </FrameworkElement.Resources>
     <Grid>
@@ -87,6 +89,17 @@
 
               MaxHeight="1600"
               VirtualizingStackPanel.IsVirtualizing="True" MaxColumnWidth="2560" BorderThickness="0"  >
+            <!--<DataGrid.GroupStyle>
+                <GroupStyle HidesIfEmpty="True">
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Path=Name}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </DataGrid.GroupStyle>-->
             <DataGrid.Columns>
                 <DataGridTemplateColumn Width="20" SortMemberPath="Passworded" >
                     <DataGridTemplateColumn.Header>
@@ -155,10 +168,11 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn  Header="Ping"
-                                Binding="{Binding Path=Ping, Mode=OneWay}" 
-                                Width="50"
-                                IsReadOnly="True"
+                <DataGridTextColumn  Header="PingString"
+                                     Binding="{Binding Path=Ping, Mode=OneWay, Converter={StaticResource PingStringConverter}}" 
+                                     Width="50"
+                                     SortMemberPath="Ping"
+                                     IsReadOnly="True"
                                 >
                     <DataGridTextColumn.ElementStyle>
                         <Style   >
@@ -178,6 +192,11 @@
                     <Setter Property="Foreground" Value="WhiteSmoke"/>
                 </Style>
             </DataGrid.ColumnHeaderStyle>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Command="armaBrowser:ArmaBrowserCommands.MarkAsFavorite" CommandParameter="{Binding Path=.}"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
         </DataGrid>
     </Grid>
 </UserControl>

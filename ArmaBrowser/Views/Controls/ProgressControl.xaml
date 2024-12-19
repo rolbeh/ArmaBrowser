@@ -31,7 +31,7 @@
                      Maximum="300"
                      Value="{Binding Ping, Mode=OneWay}"/>
 
-        <TextBlock Grid.ColumnSpan="5" Grid.Row="0"  Text="{Binding Path=Procent,StringFormat=p, FallbackValue='40 %', Mode=OneWay}" 
+        <TextBlock Grid.ColumnSpan="5" Grid.Column="0" Grid.Row="0"  Text="{Binding Percent, StringFormat=p, FallbackValue='40 %', Mode=OneWay}" 
                    TextAlignment="Center"
                    FontFamily="Quartz Ms"
                    Foreground="{StaticResource ForegroundNormalBrush}"/>

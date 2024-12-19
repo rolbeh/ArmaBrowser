@@ -24,7 +24,7 @@ namespace ArmaBrowser.ViewModel
         static UpdateAvailableViewModel()
         {
             var name = (Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly()).GetName();
-            AppInstallDirectoryPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            AppInstallDirectoryPath = Path.GetDirectoryName(Assembly.GetAssembly(typeof(UpdateAvailableViewModel)).Location);
             AppName = name.Name; 
             CurrentVersion = name.Version.ToString();
             TempBaseDirectory = Path.Combine(Path.GetTempPath(), "armabrowserupdates");

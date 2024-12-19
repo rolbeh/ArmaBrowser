@@ -3,7 +3,7 @@ using System.IO;
 using Magic.Steam.Queries;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace IntegrationsTest.ArmaBrowser.TestData
+namespace IntegrationsTest.ArmaBrowser
 {
     [TestClass]
     public sealed class EncodingSteamExtensionsTests

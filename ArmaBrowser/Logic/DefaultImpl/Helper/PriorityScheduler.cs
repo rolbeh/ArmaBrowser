@@ -41,15 +41,16 @@ namespace ArmaBrowser.Logic.Helper
                 _threads = new Thread[_maximumConcurrencyLevel];
                 for (int i = 0; i < _threads.Length; i++)
                 {
-                    int local = i;
                     _threads[i] = new Thread(() =>
                     {
                         foreach (Task t in _tasks.GetConsumingEnumerable())
-                            base.TryExecuteTask(t);
-                    });
-                    _threads[i].Name = string.Format("PriorityScheduler: ", i);
-                    _threads[i].Priority = _priority;
-                    _threads[i].IsBackground = true;
+                            TryExecuteTask(t);
+                    })
+                    {
+                        Name = $"PriorityScheduler: {i}",
+                        Priority = _priority,
+                        IsBackground = true
+                    };
                     _threads[i].Start();
                 }
             }

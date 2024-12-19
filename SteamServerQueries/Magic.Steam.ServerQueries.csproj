@@ -40,7 +40,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GameServerQueryOption.cs" />
     <Compile Include="Queries\EncodingSteamExtensions.cs" />
+    <Compile Include="Queries\GameServerQueryEndPoint.cs" />
     <Compile Include="Queries\SteamDefragmentedBytes.cs" />
     <Compile Include="ServerQueries.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -55,7 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations">
-      <Version>10.4.0</Version>
+      <Version>11.1.0</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

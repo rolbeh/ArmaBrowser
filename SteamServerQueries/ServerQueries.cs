@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Magic.Steam.Queries;
 
 namespace Magic.Steam
@@ -20,51 +21,55 @@ namespace Magic.Steam
         private const byte ReponseHeanderByte = 0x44;
         private const byte RuleRequestByte = 0x56;
         private const byte RuleReponseByte = 0x45;
-
+        private const string StringZero = "\0";
         static readonly Encoding CharEncoding = Encoding.GetEncoding(1252);
 
-
-        public static SteamGameServerQueryEndPoint[] GetServerList(string gamename,
-            Action<SteamGameServerQueryEndPoint> itemGenerated)
+        [PublicAPI]
+        public static IEnumerable<GameServerQueryEndPoint> DiscoverQueryEndPoints(
+            [CanBeNull] Action<GameServerQueryOption> optionAction)
         {
+            return DiscoverQueryEndPointsIndistinct(optionAction).Distinct(new SteamGameServerQueryEndPointComparer());
+        }
+
+        private static IEnumerable<GameServerQueryEndPoint> DiscoverQueryEndPointsIndistinct([CanBeNull]Action<GameServerQueryOption> optionAction)
+        {
+            var option   = new GameServerQueryOption();
+            optionAction?.Invoke(option);
+
             // https://developer.valvesoftware.com/wiki/Master_Server_Query_Protocol
 
-            var queryEndPoints = new List<SteamGameServerQueryEndPoint>(5000);
-            
             var addressBytes = new byte[4];
             var portBytes = new byte[2];
-            
 
-            var dnsEntry = System.Net.Dns.GetHostEntry("hl2master.steampowered.com");
+
+            var dnsEntry = System.Net.Dns.GetHostEntry(option.MasterServerName);
             //var ip = dnsEntry.AddressList.Length > 1 ? dnsEntry.AddressList[1] : dnsEntry.AddressList[0];
-            foreach (var ip in dnsEntry.AddressList)
+            foreach (var ip in dnsEntry.AddressList.OrderBy(n => Guid.NewGuid()).ToArray())
             {
-                Debug.WriteLine($"Read from  {ip}"); 
+                Debug.WriteLine($"Read from  {ip}");
                 var roundtrips = 0;
                 IPEndPoint lastEndPoint = new IPEndPoint(0, 0);
-                queryEndPoints.Clear();
+
+                string filter = option.Filter.ToString();
+                Debug.WriteLine("Filter: " + filter);
 
                 using (System.Net.Sockets.UdpClient udp = new System.Net.Sockets.UdpClient())
                 {
-                    queryEndPoints.Clear();
                     var hasErros = false;
+                    var timeoutReties = 5;
+                    int lastRequestTick = 0;
 
-                    //udp.Connect("208.64.200.52", 27011);
+                    udp.Connect(ip, 27011);
+
                     while (true)
                     {
                         byte[] buffer = null;
                         try
                         {
-                            udp.Connect(ip, 27011);
                             string request = "1ÿ";
-                            request += lastEndPoint + "\0";
-                            request += "\\gamedir\\" + gamename;
-                            //request += "\\empty\\0";
-
-#if DEBUG //request += @"\name_match\*EUTW*";
-#endif
-
-                            request += "\0";
+                            request += lastEndPoint + StringZero;
+                            request += filter;
+                            request += StringZero;
 
                             var bytes = CharEncoding.GetBytes(request);
 
@@ -72,18 +77,31 @@ namespace Magic.Steam
                             IPEndPoint endp = udp.Client.RemoteEndPoint as IPEndPoint;
                             udp.Client.ReceiveTimeout = 900;
 
+                            // throttling request max 30 request per minute
+                            // I go save with 25 requests
+                            int elapsedTime = Environment.TickCount - lastRequestTick;
+                            int pause = (60 / 20) * 1000;
+                            int wait = pause - elapsedTime;
+                            if (wait > 0)
+                            {
+                                Debug.WriteLine($"wait {wait} milsec");
+                                Thread.Sleep(wait);
+                            }
                             var sendlen = udp.Send(bytes, bytes.Length);
-#if DEBUG
-                            if (sendlen != bytes.Length)
-                                Trace.WriteLine("IServerRepository.GetServerList - sendlen != bytes.Length");
-#endif
-
+                            lastRequestTick = Environment.TickCount;
+                            
                             roundtrips++;
                             buffer = udp.Receive(ref endp);
                         }
                         catch (System.Net.Sockets.SocketException)
                         {
-                            //hasErros = true;
+                            if (timeoutReties > 0)
+                            {
+                                timeoutReties--;
+                                Debug.WriteLine("wait 63 sec");
+                                Thread.Sleep(63000);
+                                continue;
+                            }
                             break;
                         }
                         catch (TimeoutException)
@@ -122,18 +140,19 @@ namespace Magic.Steam
 
                                 lastEndPoint = new IPEndPoint(new IPAddress(addressBytes), port);
 
-                                var item = new SteamGameServerQueryEndPoint();
-                                item.Host = lastEndPoint.Address;
-                                item.QueryPort = lastEndPoint.Port;
-                                queryEndPoints.Add(item);
-                                if (itemGenerated != null)
-                                    itemGenerated(item);
+                                var item = new GameServerQueryEndPoint
+                                {
+                                    Host = lastEndPoint.Address,
+                                    QueryPort = lastEndPoint.Port
+                                };
+                                yield return item;
                             }
 
                             Debug.WriteLine("RoundTrips {0} - {1}", roundtrips, lastEndPoint.ToString());
-
+                            
                             if (addressBytes.All(b => b == 0))
                             {
+                                Debug.WriteLine("finished GameServerQueryEndPoints successfull");
                                 break;
                             }
                         }
@@ -142,20 +161,19 @@ namespace Magic.Steam
                         break;
                 }
             }
-            
-            return queryEndPoints.Distinct(new SteamGameServerQueryEndPointComparer()).ToArray();
         }
-
-        class SteamGameServerQueryEndPointComparer : IEqualityComparer<SteamGameServerQueryEndPoint>
+        
+        class SteamGameServerQueryEndPointComparer : IEqualityComparer<GameServerQueryEndPoint>
         {
             #region Implementation of IEqualityComparer<in SteamGameServerQueryEndPoint>
 
-            public bool Equals(SteamGameServerQueryEndPoint x, SteamGameServerQueryEndPoint y)
+            public bool Equals(GameServerQueryEndPoint x, GameServerQueryEndPoint y)
             {
-                return x.QueryPort == y.QueryPort && x.Host.ToString() == y.Host.ToString();
+                return y != null && x != null 
+                    && x.QueryPort == y.QueryPort && x.Host.ToString() == y.Host.ToString();
             }
 
-            public int GetHashCode(SteamGameServerQueryEndPoint obj)
+            public int GetHashCode(GameServerQueryEndPoint obj)
             {
                 return obj.QueryPort.GetHashCode() ^ 234
                        + obj.Host.GetHashCode() ^ 234;
@@ -165,7 +183,7 @@ namespace Magic.Steam
         }
 
 
-        public static SteamGameServer GetServerInfo(SteamGameServerQueryEndPoint gameServerQueryEndpoint)
+        public static SteamGameServer GetServerInfo(GameServerQueryEndPoint gameServerQueryEndpoint)
         {
             return GetServerInfo(new IPEndPoint(gameServerQueryEndpoint.Host, gameServerQueryEndpoint.QueryPort));
         }
@@ -384,12 +402,10 @@ namespace Magic.Steam
                     result.Add(p);
                 }
                 item.Players = result;
-                return;
             }
             catch (Exception)
             {
                 // ignored
-                return;
             }
         }
 
@@ -405,7 +421,7 @@ namespace Magic.Steam
             IPEndPoint endp = null;
             // Rules auslesen
             var challengeRequest = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, RuleRequestByte, 0xFF, 0xFF, 0xFF, 0xFF };
-            var sendlen = udp.Send(challengeRequest, 9);
+            udp.Send(challengeRequest, 9);
 
             byte[] respose = udp.Receive(ref endp);
 
@@ -415,7 +431,7 @@ namespace Magic.Steam
                 return;
             }
             respose[4] = RuleRequestByte;
-            sendlen = udp.Send(respose, 9);
+            udp.Send(respose, 9);
             respose = udp.Receive(ref endp);
 
             if (respose[4] != RuleReponseByte)
@@ -430,7 +446,7 @@ namespace Magic.Steam
                 SteamDefragmentedBytes unFramed = respose.DefragmentSteamBytes_1_56();
 #if DEBUG
                 bool writeFile = Directory.Exists(@"E:\temp\Data");
-                string filename = @"E:\temp\Data\V_" + item.Version + "_" + item.IpAdresse.ToString();
+                string filename = @"E:\temp\Data\V_" + item.Version + "_" + item.IpAdresse;
                 if (writeFile)
                 {
                     if (respose.Length > 7)
@@ -484,7 +500,7 @@ namespace Magic.Steam
             }
         }
 
-        [Pure]
+        [System.Diagnostics.Contracts.Pure]
         private static IEnumerable<KeyValuePair<string, string>> ReadRules(SteamDecodedBytes respose, Version version)
         {
             if (version.Major == 1)
@@ -512,7 +528,6 @@ namespace Magic.Steam
             file.Seek(0, SeekOrigin.Begin);
             using (var br = new BinaryReader(file, Encoding.ASCII, true))
             {
-                var modCount = 0;
                 var versionByte = br.ReadByte();
                 var someExtras = br.ReadByte();
                 var dlcFlags1 = br.ReadUInt16();
@@ -537,7 +552,7 @@ namespace Magic.Steam
                 Debug.WriteLineIf(trace, String.Format("Position: {0}", file.Position));
 
                 Debug.WriteIf(trace, "ModCount: ");
-                modCount = br.ReadByte();
+                int modCount = br.ReadByte();
 
                 Debug.WriteLineIf(trace, modCount);
                 var modNr = 0;
@@ -546,16 +561,14 @@ namespace Magic.Steam
                 {
                     modNr++;
 
-                    var modHash = uint.MinValue;
-                    var pubId = uint.MinValue;
                     string modName = null;
 
 
                     Debug.WriteLineIf(trace, "");
                     Debug.WriteLineIf(trace, $"Mod {modNr}");
 
-                    modHash = br.ReadUInt32();
-                    pubId = ReadPublisherId(br);
+                    var modHash = br.ReadUInt32();
+                    var pubId = ReadPublisherId(br);
 
                     byte modNameLength = br.ReadByte();
 
@@ -622,6 +635,7 @@ namespace Magic.Steam
         [Flags]
         private enum  DlcFlags : ushort
         {
+            // ReSharper disable UnusedMember.Local
             Dlc1 = 1,
             Dlc2 = 1 << 1,
             Dlc3 = 1 << 2,
@@ -638,6 +652,7 @@ namespace Magic.Steam
             Dlc14 = 1 << 13,
             Dlc15 = 1 << 14,
             Dlc16 = 1 << 15 
+            // ReSharper restore UnusedMember.Local
         }
 
         private static uint ReadPublisherId(BinaryReader reader)
@@ -658,8 +673,7 @@ namespace Magic.Steam
             if (key != null)
             {
                 var idx = key.LastIndexOf('-') + 1;
-                var count = 0;
-                if (Int32.TryParse(key.Substring(idx, key.Length - idx), out count))
+                if (Int32.TryParse(key.Substring(idx, key.Length - idx), out var count))
                 {
                     for (int i = 0; i < count; i++)
                     {
@@ -684,30 +698,33 @@ namespace Magic.Steam
                 KeyValues = new Dictionary<string, string>();
             }
 
+            // ReSharper disable NotAccessedField.Local InconsistentNaming
             public byte ProtocolVersion;
             public string GameServerName;
             public string Map;
+            
             public string Folder;
             public string Game;
-
+            
             public short ID;
             public byte CurrentPlayerCount;
             public byte MaxPlayerCount;
             public byte CurrentBotsCount;
             public ServerQueryRequestType ServerType;
             public bool Password;
-
+            
             public bool VAC;
             public bool Mode;
             public string Version;
+
             public Int32 GamePort;
             public byte[] Data;
-
             public long ServerSteamId;
 
             public string Keywords;
 
             public long GameID;
+            // ReSharper restore NotAccessedField.Local InconsistentNaming
             public int Ping;
 
             public Dictionary<string, string> KeyValues { get; private set; }
@@ -730,14 +747,17 @@ namespace Magic.Steam
 
         enum ServerQueryRequestType
         {
+            // ReSharper disable UnusedMember.Local
             DedicatedServer = 0x64, // 'd'
             NonDedicatedServer = 0x6C, // 'l'
             RelayServer = 0x70, // 'p'
+            // ReSharper restore UnusedMember.Local
         }
 
-        static bool IsNULL(byte b)
+        // ReSharper disable once InconsistentNaming
+        private static bool IsNULL(byte b)
         {
-            return b == System.Byte.MinValue;
+            return b == Byte.MinValue;
         }
     }
 

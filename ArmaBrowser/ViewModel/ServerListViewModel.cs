@@ -5,11 +5,10 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Data;  
+using System.Windows.Data;
 
 namespace ArmaBrowser.ViewModel
 {
@@ -20,7 +19,7 @@ namespace ArmaBrowser.ViewModel
         private readonly LogicContext _context;
         private ListCollectionView _serverItemsView;
         private string _textFilter = string.Empty;
-        private System.Net.IPEndPoint _ipEndPointFilter = null;
+        private System.Net.IPEndPoint _ipEndPointFilter;
         private IServerItem _selectedServerItem;
         private ICollection<LoadingServerListContext> _reloadContexts; 
         private IAddon _selectedAddon;
@@ -28,12 +27,12 @@ namespace ArmaBrowser.ViewModel
         private string _selectedEndPoint;
         private bool _runAsAdmin;
         private bool _launchWithoutHost;
-        private IEnumerable<System.Net.IPEndPoint> _lastItems = new System.Net.IPEndPoint[0];
+        private System.Net.IPEndPoint[] _lastItems = new System.Net.IPEndPoint[0];
 
-        private System.Threading.CancellationTokenSource _reloadingCts = new System.Threading.CancellationTokenSource();
+        private CancellationTokenSource _reloadingCts = new CancellationTokenSource();
         
         private bool _isJoining;
-        private string _version;
+        private readonly string _version;
         private int _totalPlayerCount;
 
         #endregion Fields
@@ -44,62 +43,61 @@ namespace ArmaBrowser.ViewModel
 
         public Collection<IServerItem> ServerItems
         {
-            get { return _context.ServerItems; }
+            get { return this._context.ServerItems; }
         }
 
         public ICollection<LoadingServerListContext> ReloadContexts
         {
             get
             {
-                return _reloadContexts ?? (_reloadContexts = new ReadOnlyObservableCollection<LoadingServerListContext>(_context.ReloadThreads));
+                return this._reloadContexts ?? (this._reloadContexts = new ReadOnlyObservableCollection<LoadingServerListContext>(this._context.ReloadThreads));
             }
         }
 
         public Collection<IAddon> Addons
         {
-            get { return _context.Addons; }
+            get { return this._context.Addons; }
         }
         
         public ListCollectionView ServerItemsView
         {
-            get { return _serverItemsView ?? CreateServerItemsView(); }
+            get { return this._serverItemsView ?? this.CreateServerItemsView(); }
         }
 
         private ListCollectionView CreateServerItemsView()
         {
-            _serverItemsView = new ListCollectionView(ServerItems) { Filter = OnServerItemsFilter };
+            this._serverItemsView = new ListCollectionView(this.ServerItems) { Filter = this.OnServerItemsFilter };
 
-            _serverItemsView.IsLiveSorting = true;
+            this._serverItemsView.IsLiveSorting = true;
 
             // Sorting
-            _serverItemsView.SortDescriptions.Add(new System.ComponentModel.SortDescription { PropertyName = "GroupName", Direction = System.ComponentModel.ListSortDirection.Ascending });
-            _serverItemsView.SortDescriptions.Add(new System.ComponentModel.SortDescription { PropertyName = "CurrentPlayerCount", Direction = System.ComponentModel.ListSortDirection.Descending });
+            this._serverItemsView.SortDescriptions.Add(new SortDescription { PropertyName = "GroupName", Direction = ListSortDirection.Ascending });
+            this._serverItemsView.SortDescriptions.Add(new SortDescription { PropertyName = "CurrentPlayerCount", Direction = ListSortDirection.Descending });
 
             // Grouping           
-            if (_serverItemsView.GroupDescriptions != null)
-                _serverItemsView.GroupDescriptions.Add(new PropertyGroupDescription("GroupName"));
+            this._serverItemsView.GroupDescriptions.Add(new PropertyGroupDescription("GroupName"));
 
-            return _serverItemsView;
+            return this._serverItemsView;
         }
 
         public string TextFilter
         {
-            get { return _textFilter; }
+            get { return this._textFilter; }
             set
             {
-                if (_textFilter == value) return;
-                _textFilter = value;
+                if (this._textFilter == value) return;
+                this._textFilter = value;
 
-                _ipEndPointFilter = null;
+                this._ipEndPointFilter = null;
 
-                if (!string.IsNullOrEmpty(_textFilter))
+                if (!string.IsNullOrEmpty(this._textFilter))
                 {
-                    _textFilter = _textFilter.Trim();
-                    var doppelpunktpos = _textFilter.IndexOf(':');
-                    if (doppelpunktpos > 6 && (_textFilter.Length > doppelpunktpos + 4))
+                    this._textFilter = this._textFilter.Trim();
+                    var doppelpunktpos = this._textFilter.IndexOf(':');
+                    if (doppelpunktpos > 6 && (this._textFilter.Length > doppelpunktpos + 4))
                     {
-                        var ipstr = _textFilter.Substring(0, doppelpunktpos);
-                        var portstr = _textFilter.Substring(doppelpunktpos + 1, _textFilter.Length - doppelpunktpos - 1);
+                        var ipstr = this._textFilter.Substring(0, doppelpunktpos);
+                        var portstr = this._textFilter.Substring(doppelpunktpos + 1, this._textFilter.Length - doppelpunktpos - 1);
                         System.Net.IPAddress ip;
                         int port;
                         if (System.Net.IPAddress.TryParse(ipstr, out ip)
@@ -107,61 +105,61 @@ namespace ArmaBrowser.ViewModel
                                 && port > System.Net.IPEndPoint.MinPort
                                 && port < System.Net.IPEndPoint.MaxPort)
                         {
-                            _ipEndPointFilter = new System.Net.IPEndPoint(ip, port);
+                            this._ipEndPointFilter = new System.Net.IPEndPoint(ip, port);
                         }
                     }
                 }
 
-                OnPropertyChanged();
+                this.OnPropertyChanged();
 
-                Properties.Settings.Default.TextFilter = _textFilter;
-                ServerItemsView.Refresh();
-                RememberLastVisiblyItems();
+                Properties.Settings.Default.TextFilter = this._textFilter;
+                this.ServerItemsView.Refresh();
+                this.RememberLastVisiblyItems();
             }
         }
 
         private void RememberLastVisiblyItems()
         {
-            _lastItems = ServerItemsView.Cast<IServerItem>().Take(50).Select(i => { return new System.Net.IPEndPoint(i.Host, i.QueryPort); }).ToArray();
+            this._lastItems = this.ServerItemsView.Cast<IServerItem>().Take(50).Select(i => { return new System.Net.IPEndPoint(i.Host, i.QueryPort); }).ToArray();
 
         }
 
         public IAddon SelectedAddon
         {
-            get { return _selectedAddon; }
+            get { return this._selectedAddon; }
             set
             {
-                if (_selectedAddon == value) return;
-                _selectedAddon = value;
-                OnPropertyChanged();
+                if (this._selectedAddon == value) return;
+                this._selectedAddon = value;
+                this.OnPropertyChanged();
                 //ServerItemsView.Refresh();
             }
         }
 
         public IServerItem SelectedServerItem
         {
-            get { return _selectedServerItem; }
+            get { return this._selectedServerItem; }
             set
             {
-                if (_selectedServerItem == value) return;
-                _selectedServerItem = value;
-                _selectedEndPoint = _selectedServerItem == null ? string.Empty : string.Format("{0}:{1}", _selectedServerItem.Host, _selectedServerItem.Port);
-                
-                RefreshServerInfoAsync(new[] { _selectedServerItem });
-                
-                RefreshUsedAddons();
-                OnPropertyChanged();
+                if (this._selectedServerItem == value) return;
+                this._selectedServerItem = value;
+                this._selectedEndPoint = this._selectedServerItem == null ? string.Empty : string.Format("{0}:{1}", this._selectedServerItem.Host, this._selectedServerItem.Port);
+
+                this.RefreshServerInfoAsync(new[] {this._selectedServerItem });
+
+                this.RefreshUsedAddons();
+                this.OnPropertyChanged();
 
             }
         }
 
         public bool RunAsAdmin
         {
-            get { return _runAsAdmin; }
+            get { return this._runAsAdmin; }
             set
             {
-                _runAsAdmin = value;
-                OnPropertyChanged();
+                this._runAsAdmin = value;
+                this.OnPropertyChanged();
             }
         }
 
@@ -189,57 +187,74 @@ namespace ArmaBrowser.ViewModel
                     System.IO.Path.DirectorySeparatorChar + "Arma 3" + System.IO.Path.DirectorySeparatorChar;
             }
         }
-
+        
+        public string Arma3SteamAddonFolder
+        {
+            get
+            {
+                return this.ArmaPath + System.IO.Path.DirectorySeparatorChar + "!Workshop" + System.IO.Path.DirectorySeparatorChar;
+            }
+        }
 
         #endregion
 
         public ServerListViewModel()
         {
-            if (!System.IO.Directory.Exists(ArmaBrowserAddonFolder))
-                System.IO.Directory.CreateDirectory(ArmaBrowserAddonFolder);
+            if (!System.IO.Directory.Exists(this.ArmaBrowserAddonFolder))
+                System.IO.Directory.CreateDirectory(this.ArmaBrowserAddonFolder);
 
-            UpdateAvailable = new UpdateAvailableViewModel();
-            UpdateAvailable.CheckForNewReleases().Wait(0);
-            
-            _version = this.GetType().Assembly.GetName().Version.ToString();
+            this.UpdateAvailable = new UpdateAvailableViewModel();
+            this.UpdateAvailable.CheckForNewReleases().Wait(0);
+
+            this._version = this.GetType().Assembly.GetName().Version.ToString();
             
             UiTask.Initialize();
-            _context = new LogicContext();
+            ModInstallPath[] modFolders =
+            {
+                new ModInstallPath(this.ArmaBrowserAddonFolder, false),
+                new ModInstallPath(this.Arma3UserAddonFolder, false)
+            };
+            this._context = new LogicContext(modFolders);
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
 
-            _context.ServerItems.CollectionChanged += _serverItems_CollectionChanged;           
-            _context.PropertyChanged += Context_PropertyChanged;
-                
-            TextFilter = Properties.Settings.Default.TextFilter;
-            _selectedEndPoint = Properties.Settings.Default.LastPlayedHost;
+            this._context.ServerItems.CollectionChanged += this._serverItems_CollectionChanged;
+            this._context.PropertyChanged += this.Context_PropertyChanged;
 
-            LookForInstallation();
+            this.TextFilter = Properties.Settings.Default.TextFilter;
+            this._selectedEndPoint = Properties.Settings.Default.LastPlayedHost;
 
-            string[] recentlyHosts = Properties.Settings.Default.RecentlyHosts.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Reverse().ToArray();
-            IServerItem[] recentlyServerItems = _context.AddServerItems(recentlyHosts);
+            this.LookForInstallation();
+
+            IServerItem[] recentlyServerItems = Properties.Settings.Default.RecentlyHosts.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Reverse()
+                .Select(this._context.ToServerItem)
+                .ToArray();
+            IServerItem[] favoriteServerItems = ServiceHub.Instance.GetService<FavoriteService>().Get();
+            IServerItem[] serverItems = favoriteServerItems.Union(recentlyServerItems).Distinct(ServerItemComparer.Default).ToArray();
+
+            this._context.AddServerItems(serverItems);
             foreach (var item in recentlyServerItems)
             {
                 item.LastPlayed = DateTime.Now;
             }
-            var refreshRecentlyServerItemsTask = _context.RefreshServerInfoAsync(recentlyServerItems);
-            refreshRecentlyServerItemsTask.ContinueWith((t,o) => ServerItemsView.Refresh(), null, TaskScheduler.FromCurrentSynchronizationContext());
+            var refreshRecentlyServerItemsTask = this._context.RefreshServerInfoAsync(serverItems);
+            refreshRecentlyServerItemsTask.ContinueWith((t,o) => this.ServerItemsView.Refresh(), null, TaskScheduler.FromCurrentSynchronizationContext());
             
-            Task.Run((Action)EndlessRefreshSelecteItem);
+            Task.Run((Action) this.EndlessRefreshSelecteItem);
         }
 
         async void RefreshServerInfoAsync(IServerItem[] serverItems)
         {
-            await _context.RefreshServerInfoAsync(serverItems);
+            await this._context.RefreshServerInfoAsync(serverItems);
             //ServerItemsView.Refresh(); // LostFocus Problem      
         }
 
-        void _serverItems_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        void _serverItems_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             switch (e.Action)
             {
                 case NotifyCollectionChangedAction.Add:
-                    if (e.NewItems != null)
-                        TotalPlayerCount += (e.NewItems.Cast<IServerItem>().First()).CurrentPlayerCount;
+                    if (e.NewItems != null) this.TotalPlayerCount += (e.NewItems.Cast<IServerItem>().First()).CurrentPlayerCount;
                     break;
                 case NotifyCollectionChangedAction.Remove:
                     break;
@@ -248,7 +263,7 @@ namespace ArmaBrowser.ViewModel
                 case NotifyCollectionChangedAction.Move:
                     break;
                 case NotifyCollectionChangedAction.Reset:
-                    TotalPlayerCount = 0;
+                    this.TotalPlayerCount = 0;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -260,65 +275,66 @@ namespace ArmaBrowser.ViewModel
             switch (e.PropertyName)
             {
                 case "ArmaVersion": //_context.ArmaVersion
-                    OnPropertyChanged("ArmaVersion");
+                    this.OnPropertyChanged(nameof(this.ArmaVersion));
                     break;
             }
         }
         
         public async void ReloadServerList()
         {
-            BeginLoading();
+            this.BeginLoading();
 
-            _reloadingCts.Cancel();
-            var oldsrc = _reloadingCts;
-            _reloadingCts = new System.Threading.CancellationTokenSource();
-            CancellationToken token = _reloadingCts.Token;
+            this._reloadingCts.Cancel();
+            CancellationTokenSource oldTokenSource = this._reloadingCts;
+            this._reloadingCts = new CancellationTokenSource();
+            CancellationToken token = this._reloadingCts.Token;
 
-            oldsrc.Cancel(false);
+            oldTokenSource.Cancel(false);
             try
             {
-                await Task.Factory.StartNew(o => ReloadInternal((CancellationToken)o), token, token).
-                ContinueWith(t =>
+                await Task.Factory.StartNew(o => this.ReloadInternal((CancellationToken)o), token, token)
+                    .ContinueWith(t =>
                 {
                     if (t.Status == TaskStatus.RanToCompletion)
-                        RememberLastVisiblyItems();
-
-                });
+                    {
+                        this.RememberLastVisiblyItems();
+                    }
+                }, token);
             }
             catch (Exception)
             {
                 // ignored
             }
 
-            EndLoading();
+            this.EndLoading();
         }
         
         public bool LoadingBusy
         {
-            get { return Interlocked.Read( ref _loadingBusy) > 0; }
+            get { return Interlocked.Read( ref this._loadingBusy) > 0; }
         }
 
         private void BeginLoading()
         {
-            Interlocked.Add(ref _loadingBusy, +1L);
-            OnPropertyChanged("LoadingBusy");
+            Interlocked.Add(ref this._loadingBusy, +1L);
+            this.OnPropertyChanged("LoadingBusy");
         }
 
         private void EndLoading()
         {
-            if (Interlocked.Read(ref _loadingBusy) > 0)
-                Interlocked.Add(ref _loadingBusy, -1L);
-            OnPropertyChanged("LoadingBusy");
+            if (Interlocked.Read(ref this._loadingBusy) > 0)
+                Interlocked.Add(ref this._loadingBusy, -1L);
+            this.OnPropertyChanged("LoadingBusy");
         }
 
         void ReloadInternal(CancellationToken cancellationToken)
         {
-            if (_ipEndPointFilter != null)
-                _context.ReloadServerItem(_ipEndPointFilter, cancellationToken);
+            if (this._ipEndPointFilter != null)
+                this._context.ReloadServerItem(this._ipEndPointFilter, cancellationToken);
             else
-                _context.ReloadServerItems(_lastItems, cancellationToken);
-            
-            RefreshUsedAddons();
+                this._context.ReloadServerItems(this._lastItems, cancellationToken);
+
+            this.RefreshUsedAddons();
         }
 
         private bool OnServerItemsFilter(object o)
@@ -326,15 +342,15 @@ namespace ArmaBrowser.ViewModel
             var result = true;
             var item = (IServerItem)o;
 
-            if (_ipEndPointFilter != null)
+            if (this._ipEndPointFilter != null)
             {
-                result = item.Host.Equals(_ipEndPointFilter.Address) && item.Port == _ipEndPointFilter.Port;
+                result = item.Host.Equals(this._ipEndPointFilter.Address) && item.Port == this._ipEndPointFilter.Port;
                 return result;
             }
 
-            if (!string.IsNullOrWhiteSpace(_textFilter))
+            if (!string.IsNullOrWhiteSpace(this._textFilter))
             {
-                var strs = _textFilter.Trim().Split(' ').ToArray();
+                var strs = this._textFilter.Trim().Split(' ').ToArray();
 
                 foreach (var s in strs)
                 {
@@ -378,18 +394,18 @@ namespace ArmaBrowser.ViewModel
 
         private async void RefreshUsedAddons()
         {
-            var selectedItem = _selectedServerItem;
+            var selectedItem = this._selectedServerItem;
             
-            if (_selectedServerItem == null || _selectedServerItem.Mods == null)
+            if (this._selectedServerItem == null || this._selectedServerItem.Mods == null)
             {
                 return;
             }
             //if (_selectedServerItem.Mods != null)
             //{
             int sortNr = 1;
-            var hostAddons = _selectedServerItem.Mods.Select(m => new { SortNr = sortNr++, ModName = m });
+            var hostAddons = this._selectedServerItem.Mods.Select(m => new { SortNr = sortNr++, ModName = m });
 
-            var endpoint = string.Format("{0}:{1}", _selectedServerItem.Host, _selectedServerItem.Port);
+            var endpoint = string.Format("{0}:{1}", this._selectedServerItem.Host, this._selectedServerItem.Port);
             var hostCfgItem = HostConfigCollection.Default.Cast<HostConfig>()
                                 .FirstOrDefault(h => h.EndPoint == endpoint);
 
@@ -399,7 +415,7 @@ namespace ArmaBrowser.ViewModel
                 hostAddons = hostCfgItem.PossibleAddons.Split(';').Select(m => new { SortNr = sortNr2++, ModName = m }).ToArray();
             }
 
-            var mods = (from mod in Addons
+            var mods = (from mod in this.Addons
                         join selectedMod in hostAddons on mod.ModName equals selectedMod.ModName into selectedMods
                         from selectedMod in selectedMods.DefaultIfEmpty()
                         let sortnr = selectedMod == null ? 0 : selectedMod.SortNr
@@ -412,7 +428,7 @@ namespace ArmaBrowser.ViewModel
             var s = selectedItem.Signatures ?? string.Empty;
             var hostAddonKeyNames = s.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).ToArray();
 
-            await _context.UpdateAddonInfos(hostAddonKeyNames);
+            await this._context.UpdateAddonInfos(hostAddonKeyNames);
 
             // Addons automatisch ab- oder aus- wählen
             foreach (var item in mods)
@@ -482,11 +498,14 @@ namespace ArmaBrowser.ViewModel
 
         }
 
+        /// <summary>
+        /// Steam install folder of Arma3
+        /// </summary>
         public string ArmaPath
         {
             get
             {
-                return _context.ArmaPath;
+                return this._context.ArmaPath;
             }
         }
 
@@ -494,58 +513,58 @@ namespace ArmaBrowser.ViewModel
         {
             get
             {
-                return _context.ArmaVersion;
+                return this._context.ArmaVersion;
             }
         }
 
         public bool IsJoinig
         {
-            get { return _isJoining; }
+            get { return this._isJoining; }
             set
             {
-                _isJoining = value;
-                OnPropertyChanged();
+                this._isJoining = value;
+                this.OnPropertyChanged();
             }
         }
 
         public string Version
         {
-            get { return _version; }
+            get { return this._version; }
         }
 
 
         public bool LaunchWithoutHost
         {
-            get { return _launchWithoutHost; }
+            get { return this._launchWithoutHost; }
             set
             {
-                _launchWithoutHost = value;
-                OnPropertyChanged();
+                this._launchWithoutHost = value;
+                this.OnPropertyChanged();
             }
         }
 
 
         public int TotalPlayerCount
         {
-            get { return _totalPlayerCount; }
+            get { return this._totalPlayerCount; }
             set
             {
-                _totalPlayerCount = value;
-                OnPropertyChanged();
+                this._totalPlayerCount = value;
+                this.OnPropertyChanged();
             }
         }
 
         internal void OpenArma()
         {
-            var host = _selectedServerItem;
-            if (_launchWithoutHost)
+            var host = this._selectedServerItem;
+            if (this._launchWithoutHost)
                 host = null;
 
             if (host != null && host.Port <= System.Net.IPEndPoint.MinPort)
                 return;
 
             var endpoint = host != null ? string.Format("{0}:{1}", host.Host, host.Port) : string.Empty;
-            var usedAddons = Addons.Where(a => a.IsActive).OrderBy(a => a.ActivationOrder).ToArray();
+            var usedAddons = this.Addons.Where(a => a.IsActive).OrderBy(a => a.ActivationOrder).ToArray();
             var hostCfgItem = HostConfigCollection.Default.Cast<HostConfig>().FirstOrDefault(h => h.EndPoint == endpoint);
             if (hostCfgItem == null)
             {
@@ -560,20 +579,20 @@ namespace ArmaBrowser.ViewModel
             hostCfgItem.PossibleAddons = string.Join(";", usedAddons.OrderBy(a => a.ActivationOrder).Select(a => a.ModName).ToArray());
 
 
-            SaveHistory();
+            this.SaveHistory();
 
-            _context.Open(host, usedAddons.ToArray());
+            this._context.Open(host, usedAddons.ToArray());
         }
 
         private void SaveHistory()
         {
-            if (_selectedServerItem == null) return;
+            if (this._selectedServerItem == null) return;
 
-            _selectedServerItem.LastPlayed = DateTime.Now;
+            this._selectedServerItem.LastPlayed = DateTime.Now;
 
             // limit addresses to 10 entries
             {
-                var items = _context.ServerItems.Where(srv => srv.LastPlayed.HasValue).OrderByDescending(srv => srv.LastPlayed).Skip(10);
+                var items = this._context.ServerItems.Where(srv => srv.LastPlayed.HasValue).OrderByDescending(srv => srv.LastPlayed).Skip(10);
                 foreach (var item in items)
                 {
                     item.LastPlayed = null;
@@ -582,14 +601,14 @@ namespace ArmaBrowser.ViewModel
 
             // Save histroy addresses
             {
-                var items = _context.ServerItems.Where(srv => srv.LastPlayed.HasValue).OrderByDescending(srv => srv.LastPlayed).Select(srv => string.Format("{0}:{1}", srv.Host, srv.QueryPort)).ToArray();
+                var items = this._context.ServerItems.Where(srv => srv.LastPlayed.HasValue).OrderByDescending(srv => srv.LastPlayed).Select(srv => string.Format("{0}:{1}", srv.Host, srv.QueryPort)).ToArray();
                 Properties.Settings.Default.RecentlyHosts = string.Join(" ", items);
             }
 
 
             // Save favorits
             {
-                var items = _context.ServerItems.Where(srv => srv.IsFavorite).Select(srv => string.Format("{0}:{1}", srv.Host, srv.QueryPort)).ToArray();
+                var items = this._context.ServerItems.Where(srv => srv.IsFavorite).Select(srv => string.Format("{0}:{1}", srv.Host, srv.QueryPort)).ToArray();
                 Properties.Settings.Default.Favorits = string.Join(" ", items);
             }
 
@@ -605,58 +624,84 @@ namespace ArmaBrowser.ViewModel
         {
             while (true)
             {
-                var mainwin = await UiTask.Run(() => App.Current.MainWindow);
+                var mainwin = await UiTask.Run(() => Application.Current.MainWindow);
 
                 if (mainwin == null) break;
                 try
                 {
                     var task = UiTask.Run(() => mainwin.WindowState != WindowState.Minimized);
                     task.Wait();
-                    if (task.IsCompleted && task.Result && !_isJoining)
+                    if (task.IsCompleted && task.Result && !this._isJoining)
                     {
-                        var item = SelectedServerItem;
+                        var item = this.SelectedServerItem;
                         if (item != null)
                         {
-                            _context.RefreshServerInfo(new[] { item });
+                            this._context.RefreshServerInfo(new[] { item });
                         }
                     }
                     await Task.Delay(3000);
                 }
                 catch
                 {
-
+                    // ignore
                 }
             }
         }
 
         internal void LookForInstallation()
         {
-            _context.LookForArmaPath();
-            OnPropertyChanged("ArmaPath");
-            OnPropertyChanged("ArmaVersion");
-            Properties.Settings.Default.ArmaPath = _context.ArmaPath;
+            this._context.LookForArmaPath();
+            this.OnPropertyChanged("ArmaPath");
+            this.OnPropertyChanged("ArmaVersion");
+            Properties.Settings.Default.ArmaPath = this._context.ArmaPath;
         }
 
-        internal void SaveFavorits()
+        internal void SaveFavorits(IServerItem item)
         {
-
+            if (item.IsFavorite)
+            {
+                ServiceHub.Instance.GetService<FavoriteService>().Add(item);
+            }
+            else
+            {
+                ServiceHub.Instance.GetService<FavoriteService>().Remove(item);
+            }
         }
 
         internal void StopAll()
         {
-            _reloadingCts.Cancel();
-            var oldsrc = _reloadingCts;
-            _reloadingCts = new System.Threading.CancellationTokenSource();
+            this._reloadingCts.Cancel();
+            this._reloadingCts = new CancellationTokenSource();
         }
 
         internal void RefreshAddons()
         {
-            _context.ReloadAddons();
+            this._context.ReloadAddons();
         }
 
         public void DownloadAddon(IAddon addon)
         {
-            _context.DownloadAddonAsync(addon);
+            this._context.DownloadAddonAsync(addon);
+        }
+
+        private class ServerItemComparer : IEqualityComparer<IServerItem>
+        {
+            internal static readonly ServerItemComparer Default = new ServerItemComparer();
+
+            bool IEqualityComparer<IServerItem>.Equals(IServerItem x, IServerItem y)
+            {
+                if (x == null || y == null)
+                {
+                    return false;
+                }
+
+                return x.Host + " " + x.Port == y.Host + " " + y.Port;
+            }
+
+            public int GetHashCode(IServerItem obj)
+            {
+                return (obj.Host + " " + obj.Port).GetHashCode();
+            }
         }
     }
 

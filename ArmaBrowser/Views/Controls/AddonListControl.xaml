@@ -20,7 +20,7 @@
         <Button Content="&#xe7;" FontSize="20" FontFamily="Wingdings" 
 		
 				HorizontalAlignment="Left" Height="32" 
-				Margin="5.083,0,0,0" Grid.RowSpan="2" 
+				Margin="5.083,0,0,0" Grid.Row="0" Grid.RowSpan="2" 
 				Style="{DynamicResource EllipseButtonStyle}" VerticalAlignment="Top" Width="32" Foreground="{DynamicResource ForegroundNormalBrush}" Click="Button_Click"/>
 
     </Grid>

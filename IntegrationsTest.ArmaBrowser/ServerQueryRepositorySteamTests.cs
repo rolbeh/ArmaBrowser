@@ -1,8 +1,9 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Magic.Steam;
 using Magic.Steam.Queries;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -10,6 +11,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace IntegrationsTest.ArmaBrowser
 {
     [TestClass]
+    [DeploymentItem("TestData", "TestData")]
     public class ServerQueryRepositorySteamTests
     {
         public TestContext TestContext { get; set; }
@@ -585,7 +587,7 @@ namespace IntegrationsTest.ArmaBrowser
 
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("olnylocal")]
         public void ReadRules_Temp_Folder_NoExceptions()
         {
             string localTestDataFolder = @"E:\Temp\Data\";
@@ -593,28 +595,29 @@ namespace IntegrationsTest.ArmaBrowser
             if (!Directory.Exists(localTestDataFolder))
                 return;
             
-            List<string> failedFiles = new List<string>(100);
+            BlockingCollection<string> failedFiles = new BlockingCollection<string>(100);
 
             string[] ruleFiles = Directory.GetFiles(localTestDataFolder);
-            foreach (var ruleFile in ruleFiles)
+            Parallel.ForEach(ruleFiles, ruleFile =>
             {
                 if (!ruleFile.EndsWith(".rdefrag"))
-                    continue;
+                    return;
                 try
                 {
                     using (FileStream unframedFile = File.OpenRead(ruleFile))
                     using (SteamDecodedBytes data = (new SteamDefragmentedBytes(ToArray(unframedFile))).DecodeSteamRuleFile_1_56())
                     {
+                        // ReSharper disable once UnusedVariable
                         SteamServerRule[] steamServerRules = ServerQueries.ReadRuleFile(data).ToArray();
                     }
-                    Trace.WriteLine($"OK!   File '{ruleFile}' ");
+                    //Trace.WriteLine($"OK!   File '{ruleFile}' ");
                 }
                 catch (Exception exception)
                 {
                     failedFiles.Add(ruleFile);
                     Trace.WriteLine($"FAIL! File '{ruleFile}' {exception.GetType().Name} {exception.Message}");
                 }
-            }
+            });
 
             foreach (var failedFile in failedFiles)
             {
@@ -633,13 +636,14 @@ namespace IntegrationsTest.ArmaBrowser
             return result;
         }
 
+        // ReSharper disable once UnusedMember.Local
         private static void PrintAsserts(SteamServerRule[] array)
         {
             var i = 0;
             foreach (var steamServerRule in array)
             {
-                Console.WriteLine($"Assert.AreEqual(\"{steamServerRule.Key}\", array[{i}].Key);");
-                Console.WriteLine($"Assert.AreEqual(\"{steamServerRule.Name}\", array[{i}].Name);");
+                Console.WriteLine($@"Assert.AreEqual(""{steamServerRule.Key}"", array[{i}].Key);");
+                Console.WriteLine($@"Assert.AreEqual(""{steamServerRule.Name}"", array[{i}].Name);");
                 Console.WriteLine();
                 i++;
             }

@@ -48,7 +48,7 @@ namespace ArmaBrowser.Data.DefaultImpl
 
         public string GetValueOf(string firstPart)
         {
-            if (firstPart == null) throw new ArgumentNullException("path");
+            if (firstPart == null) throw new ArgumentNullException(nameof(firstPart));
 
             _file.Position = 0;
 
@@ -191,49 +191,6 @@ namespace ArmaBrowser.Data.DefaultImpl
                 if (reader.Read(charbuffer, 0, 1) == 0) break;
             }
             return sb.ToString();
-        }
-
-        public struct Element
-        {
-            public long StartPos;
-            public long EndPos;
-            public string Name;
-            public ElementType ElementType;
-            public string Value;
-            public int level;
-
-            //public Element()
-            //{
-            //    StartPos = 0;
-            //    EndPos = 0;
-            //    Name = "";
-            //    ElementType = SteamConfigReader.ElementType.Array;
-            //    Value = null;
-            //    level = 0;
-            //}
-
-            public Element(string name)
-            {
-                StartPos = 0;
-                EndPos = 0;
-                Value = null;
-                level = 0;
-                ElementType = ElementType.Array;
-                Name = name.TrimStart();
-                for (var i = 0; i < name.Length; i++)
-                {
-                    if (name[i] != '\t')
-                    {
-                        level = i;
-                        break;
-                    }
-                }
-            }
-
-            public override string ToString()
-            {
-                return Name;
-            }
         }
     }
 }

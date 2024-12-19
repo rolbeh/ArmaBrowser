@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Diagnostics;
-using System.Text;
+using ArmaBrowser.Logic;
 using ArmaBrowser.ViewModel;
 
 
@@ -15,9 +10,9 @@ namespace ArmaBrowser
     /// <summary>
     /// Interaktionslogik für "App.xaml"
     /// </summary>
-    partial class App : Application
+    partial class App
     {
-        public App() : base()
+        public App()
         {
             if (UpdateAvailableViewModel.ExistNewUpdate())
             {
@@ -45,6 +40,9 @@ namespace ArmaBrowser
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            ServiceHub.Instance.Set(new AppPathService());
+            ServiceHub.Instance.Set(new FavoriteService());
+
             MainWindow = new MainWindow();
             MainWindow.Show();
 
@@ -73,8 +71,7 @@ namespace ArmaBrowser
             }
             catch 
             {
-                
-                
+                // ignore
             }
             
         }
